@@ -6,8 +6,8 @@ import (
 	"os/user"
 	"strings"
 
-	"code.google.com/p/go-netrc/netrc"
-	"github.com/codegangsta/cli"
+	"github.com/rrthomas/go-netrc/netrc"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -17,34 +17,40 @@ const (
 )
 
 func main() {
-	app := cli.NewApp()
-	app.Name = "netrc"
-	app.Usage = "Manage your netrc file."
-	app.Author = "naaman@heroku.com"
-	app.Version = "0.0.2"
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:  "netrc-path",
-			Value: defaultNetrc(),
-			Usage: "Path to the netrc file",
+	app := &cli.App{
+		Name: "netrc",
+		Usage: "Manage your netrc file.",
+		Authors: []*cli.Author{
+			&cli.Author{
+				Name: "Naaman Newbold",
+				Email: "naaman@heroku.com",
+			},
 		},
-		cli.BoolFlag{
-			Name:  "no-machine, n",
-			Usage: "disable display of machine values",
+		Version: "0.0.2",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "netrc-path",
+				Value: defaultNetrc(),
+				Usage: "Path to the netrc file",
+			},
+			&cli.BoolFlag{
+				Name:  "no-machine, n",
+				Usage: "disable display of machine values",
+			},
+			&cli.BoolFlag{
+				Name:  "login, l",
+				Usage: "toggle display of login values",
+			},
+			&cli.BoolFlag{
+				Name:  "password, p",
+				Usage: "toggle display of password values",
+			},
 		},
-		cli.BoolFlag{
-			Name:  "login, l",
-			Usage: "toggle display of login values",
-		},
-		cli.BoolFlag{
-			Name:  "password, p",
-			Usage: "toggle display of password values",
-		},
+		Action: listCommand,
 	}
 	app.CommandNotFound = func(c *cli.Context, cmd string) {
 		exit(c, ErrInvalidCommand)
 	}
-	app.Action = listCommand
 	app.BashComplete = machineCompletion
 
 	app.EnableBashCompletion = true
@@ -80,21 +86,22 @@ func (m formattableMachine) Print() {
 
 func listMachines(c *cli.Context, mf *machineFormat) {
 	filter, netrcFile := cmdSetup(c)
-	machines, _, err := netrc.ParseFile(netrcFile)
+	n, err := netrc.ParseFile(netrcFile)
 	if err != nil {
 		exit(c, ErrInvalidNetrc)
 	}
 
-	printMachines(filterMachines(machines, filter), mf)
+	printMachines(filterMachines(n.Machines, filter), mf)
 }
 
-func listCommand(c *cli.Context) {
+func listCommand(c *cli.Context) error {
 	mf := &machineFormat{
-		showMachine:  !c.GlobalBool("no-machine"),
-		showLogin:    c.GlobalBool("login"),
-		showPassword: c.GlobalBool("password"),
+		showMachine:  !c.Bool("no-machine"),
+		showLogin:    c.Bool("login"),
+		showPassword: c.Bool("password"),
 	}
 	listMachines(c, mf)
+	return nil
 }
 
 func machineCompletion(c *cli.Context) {
@@ -107,7 +114,7 @@ func machineCompletion(c *cli.Context) {
 }
 
 func cmdSetup(c *cli.Context) (filter, netrcPath string) {
-	return c.Args().First(), c.GlobalString("netrc-path")
+	return c.Args().First(), c.String("netrc-path")
 }
 
 func printMachines(machines []*netrc.Machine, mf *machineFormat) {
