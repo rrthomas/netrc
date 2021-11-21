@@ -34,15 +34,18 @@ func main() {
 				Usage: "Path to the netrc file",
 			},
 			&cli.BoolFlag{
-				Name:  "no-machine, n",
+				Name:  "no-machine",
+				Aliases: []string{"n"},
 				Usage: "disable display of machine values",
 			},
 			&cli.BoolFlag{
-				Name:  "login, l",
+				Name:  "login",
+				Aliases: []string{"l"},
 				Usage: "toggle display of login values",
 			},
 			&cli.BoolFlag{
-				Name:  "password, p",
+				Name:  "password",
+				Aliases: []string{"p"},
 				Usage: "toggle display of password values",
 			},
 		},
